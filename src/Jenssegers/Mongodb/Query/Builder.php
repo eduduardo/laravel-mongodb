@@ -28,6 +28,13 @@ class Builder extends BaseBuilder
     public $projections;
 
     /**
+     * $project before $sort, $skip and $limit
+     *
+     * @var array
+     */
+    public $projectBefore = false;
+
+    /**
      * The cursor timeout value.
      *
      * @var int
@@ -96,10 +103,11 @@ class Builder extends BaseBuilder
      * @param  array  $columns
      * @return $this
      */
-    public function project($columns)
+    public function project($columns, $projectBefore = false)
     {
         $this->projections = is_array($columns) ? $columns : func_get_args();
-
+        $this->projectBefore = $projectBefore;
+        
         return $this;
     }
 
@@ -237,6 +245,10 @@ class Builder extends BaseBuilder
             }
 
             // Apply order and limit
+            if ($this->projections && $this->projectBefore) {
+                $pipeline[] = ['$project' => $this->projections];
+            }
+
             if ($this->orders) {
                 $pipeline[] = ['$sort' => $this->orders];
             }
@@ -246,7 +258,7 @@ class Builder extends BaseBuilder
             if ($this->limit) {
                 $pipeline[] = ['$limit' => $this->limit];
             }
-            if ($this->projections) {
+            if ($this->projections && !$this->projectBefore) {
                 $pipeline[] = ['$project' => $this->projections];
             }
 
